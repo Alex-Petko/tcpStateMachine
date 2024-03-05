@@ -10,13 +10,18 @@ let unwrapOptionSeq seq = seq |> Seq.map Option.get
 let execute state eventSeq = 
     let (|EmptySeq|_|) seq = if Seq.isEmpty seq then Some () else None
 
-    let rec next eventSeq state = 
-        match eventSeq, state with
-        | _, ERROR -> ERROR
-        | EmptySeq, _ -> state
-        | _, _ -> next (Seq.tail eventSeq) (getNextState state (Seq.head eventSeq))
+    let rec next stateOption eventSeq = 
+        match stateOption, eventSeq with
+        | None, _ -> None
+        | _, EmptySeq -> stateOption
+        | _, _ -> 
+            let nextStateOption = getNextState stateOption.Value (Seq.head eventSeq)
+            if nextStateOption.IsSome then 
+                next nextStateOption (Seq.tail eventSeq)
+            else 
+                None
 
-    next eventSeq state
+    next (Some state) eventSeq 
 
 let main () =
     // Примеры для проверки
@@ -28,11 +33,11 @@ let main () =
     Console.WriteLine("Введите количество событий\nВведите каждое событие с новой строки");
     let strEventSeq =  Console.ReadLine() |> int |> fun n -> Array.init n (fun _ -> Console.ReadLine())
 
-    let eventSeq = strEventSeq |> toEventOptionSeq 
+    let eventOptionSeq = strEventSeq |> toEventOptionSeq 
 
-    if Seq.contains None eventSeq then 
-        toString ERROR
+    if Seq.contains None eventOptionSeq then 
+        None
     else
-        eventSeq |> unwrapOptionSeq |> execute CLOSED |> toString
+        eventOptionSeq |> unwrapOptionSeq |> execute CLOSED 
 
-main () |> printf "\n%s"
+main () |> fun result -> printf "\n%s" (if result.IsSome then (toString result.Value) else "ERROR")

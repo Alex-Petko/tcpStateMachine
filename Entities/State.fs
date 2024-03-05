@@ -12,4 +12,3 @@ type State =
     | FIN_WAIT_2
     | CLOSING
     | TIME_WAIT
-    | ERROR
